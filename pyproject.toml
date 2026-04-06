@@ -1,0 +1,107 @@
+#
+# MIT License
+#
+# (C) Copyright 2025-2026 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+[project]
+name = 'vtds_application_openchami'
+authors = [
+    { name = 'Eric Lund', email = 'eric.lund@hpe.com' },
+]
+classifiers = [
+    'License :: OSI Approved :: MIT License',
+    'Natural Language :: English',
+    'Operating System :: POSIX',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+]
+description = 'Openchami Application Layer Plugin for the Virtual Test Development System (vTDS) suite'
+dependencies = [
+    # yaml - this comment reduces conflicts in dependabot PRs
+    'pyyaml~=6.0',
+    # vtds base libraries - this comment reduces conflicts in dependabot PRs
+    'vtds_base~=0.0',
+    # passlib for composing and hashing user passwords
+    'passlib~=1.7',
+]
+
+dynamic = ['version']
+maintainers = [
+    { name = 'Eric Lund', email = 'eric.lund@hpe.com' },
+]
+readme = { file = 'README.md', content-type = 'text/markdown' }
+requires-python = '>=3.9'
+
+[metadata]
+url = 'https://github.com/Cray-HPE/vtds-application-openchami'
+
+license = { file = 'LICENSE' }
+
+[project.optional-dependencies]
+build = [
+    'build>=1.2.2,<1.5.0'
+]
+ci = [
+    'nox>=2024.10.9,<2026.3.0',
+]
+docs = [
+]
+style = [
+    'pycodestyle~=2.11',
+]
+lint = [
+    'pylint~=3.2',
+]
+test = [
+    # pytest - this comment reduces conflicts in dependabot PRs
+    'pytest>=8.3.3,<8.5.0',
+    # pytest coverage - this comment reduces conflicts in dependabot PRs
+    'pytest-cov>=4.1,<8.0',
+    # coverage - this comment reduces conflicts in dependabot PRs
+    'coverage~=7.4',
+]
+
+# Defines which folders belong to our package.
+[tool.setuptools.packages.find]
+include = ['vtds_application_openchami*', 'vtds_application_openchami.private*']
+exclude = ['vtds_application_openchami.tests*']
+
+[tool.setuptools.dynamic]
+
+# Allows for dynamic versioning via git-tag.
+[tool.setuptools_scm]
+
+[build-system]
+build-backend = 'setuptools.build_meta'
+requires = [
+    # setuptools - this comment reduces conflicts in dependabot PRs
+    'setuptools >= 66,< 83',
+    # setuptools scm - this comment reduces conflicts in dependabot PRs
+    'setuptools_scm[toml] >= 7.1,< 9.3',
+    # wheel - this comment reduces conflicts in dependabot PRs
+    'wheel >= 0.45.1,< 0.47.0',
+]
+
+[tool.distutils.bdist_wheel]
+universal = false # This app. is not compatible with Python2.
