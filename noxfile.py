@@ -40,7 +40,7 @@ def lint(session):
     """
     run_cmd = [
         'pylint',
-        'vtds_application_openchami',
+        'install_openchami',
     ]
     if session.python:
         session.install('.[lint]')
@@ -55,7 +55,7 @@ def style(session):
     run_cmd = [
         'pycodestyle',
         '--config=.pycodestyle',
-        'vtds_application_openchami',
+        'install_openchami',
     ]
  
     if session.python:
@@ -80,7 +80,7 @@ def tests(session):
 #        '--quiet',
 #        '-W',
 #        'ignore::DeprecationWarning',
-#        '--cov=vtds_base',
+#        '--cov=install_openchami',
 #        '--cov=tests',
 #        '--cov-append',
 #        '--cov-config=.coveragerc',
