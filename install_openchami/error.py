@@ -20,22 +20,17 @@
 # OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
-"""Module initialization
+
+# pylint: disable=consider-using-f-string
+"""Exception classes to support the OpenCHAMI installer
 
 """
-
-from os import sep as separator
-from os.path import (
-    join as path_join,
-    dirname
-)
-BASE_CONFIG_PATH = path_join(dirname(__file__), "config", "config.yaml")
-TEMPLATE_DIR_PATH = path_join(dirname(__file__), 'templates')
+# pylint: disable=unused-import
+from vtds_base import ContextualError  # Pass this along to importers
 
 
-def template(filename):
-    """Translate a file name into a full path name to a file in the
-    scripts directory.
+class ConfigError(Exception):  # pylint: disable=too-few-public-methods
+    """Exception to specifically report errors in validation of
+    configuration.
 
     """
-    return path_join(TEMPLATE_DIR_PATH, filename)

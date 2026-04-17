@@ -1,7 +1,6 @@
-#
 # MIT License
 #
-# (C) Copyright 2026 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -20,22 +19,17 @@
 # OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
-"""Module initialization
 
-"""
+# Setup endpoint
+#
+host_base = {{ hosting_config.net_head_hostname }}.{{ hosting_config.net_head_domain }}:9000
+host_bucket = {{ hosting_config.net_head_hostname }}.{{ hosting_config.net_head_domain }}:9000
+bucket_location = us-east-1
+use_https = False
 
-from os import sep as separator
-from os.path import (
-    join as path_join,
-    dirname
-)
-BASE_CONFIG_PATH = path_join(dirname(__file__), "config", "config.yaml")
-TEMPLATE_DIR_PATH = path_join(dirname(__file__), 'templates')
+# Setup access keys
+access_key = admin
+secret_key = admin123
 
-
-def template(filename):
-    """Translate a file name into a full path name to a file in the
-    scripts directory.
-
-    """
-    return path_join(TEMPLATE_DIR_PATH, filename)
+# Enable S3 v4 signature APIs
+signature_v2 = False
