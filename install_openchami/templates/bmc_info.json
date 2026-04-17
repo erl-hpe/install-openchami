@@ -1,0 +1,11 @@
+[
+    {%- for xname, bmc_info in bmcs.items() %}
+    {
+        "xname": "{{ xname }}",
+        "blade_class": "{{ bmc_info.blade_class }}",
+        "blade_instance": "{{ bmc_info.blade_instance }}",
+        "redfish_username": "{{ bmc_info.network.redfish_username }}",
+        "redfish_password": "{{ bmc_info.network.redfish_password }}"
+    }{%- if not loop.last -%},{%- endif -%}
+    {%- endfor %}
+]

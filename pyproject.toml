@@ -42,6 +42,8 @@ dependencies = [
     'pyyaml~=6.0',
     # passlib for composing and hashing user passwords
     'passlib~=1.7',
+    # vtds-base for a few template and config operations
+    'vtds-base~=0.0'
 ]
 
 dynamic = ['version']
@@ -79,6 +81,9 @@ test = [
     # coverage - this comment reduces conflicts in dependabot PRs
     'coverage~=7.4',
 ]
+
+[project.scripts]
+install_openchami = "install_openchami.install_openchami:entry"
 
 # Defines which folders belong to our package.
 [tool.setuptools.packages.find]

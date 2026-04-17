@@ -20,22 +20,12 @@
 # OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
-"""Module initialization
+"""Module entrypoint for the OpenCHAMI Installer
 
 """
+import sys
+from .install_openchami import entrypoint
 
-from os import sep as separator
-from os.path import (
-    join as path_join,
-    dirname
-)
-BASE_CONFIG_PATH = path_join(dirname(__file__), "config", "config.yaml")
-TEMPLATE_DIR_PATH = path_join(dirname(__file__), 'templates')
-
-
-def template(filename):
-    """Translate a file name into a full path name to a file in the
-    scripts directory.
-
-    """
-    return path_join(TEMPLATE_DIR_PATH, filename)
+# Start here
+if __name__ == "__main__":           # pragma no unit test
+    sys.exit(entrypoint(sys.argv))   # pragma no unit test
