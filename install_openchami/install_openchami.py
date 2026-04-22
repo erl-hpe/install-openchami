@@ -35,7 +35,13 @@ from getopt import (
 
 from .installer import Installer
 from .error import ContextualError, ConfigError
-from .utils import error
+
+
+def error(msg):
+    """Produce an error message on stderr
+
+    """
+    sys.stderr.write("ERROR: %s\n" % msg)
 
 
 class UsageError(Exception):  # pylint: disable=too-few-public-methods
