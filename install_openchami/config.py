@@ -789,8 +789,7 @@ class Config:
         name = "<unnamed-node>"
         try:
             name = self.__check_and_get_dict_key('name', node, str)
-            self.__check_and_get_dict_key('xname', node, str)
-            self.__check_and_get_dict_key('bmc_xname', node, str)
+            self.__check_and_get_dict_key('bmc_name', node, str)
             cluster_net_interface = self.__check_and_get_dict_key(
                 'cluster_net_interface', node, str
             )

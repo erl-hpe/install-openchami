@@ -42,6 +42,10 @@ dependencies = [
     'pyyaml~=6.0',
     # passlib for composing and hashing user passwords
     'passlib~=1.7',
+    # setuptools < 80 is required to provide pkg_resources
+    # for passlib and to avoid the pkg_resources deprecation
+    # warning
+    'setuptools<80',
     # vtds-base for a few template and config operations
     'vtds-base~=0.0'
 ]

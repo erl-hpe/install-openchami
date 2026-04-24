@@ -86,26 +86,26 @@ EOF
 }
 
 function __bmc_user() {
-    local xname="${1}"; shift || _bi_fail "BMC xname not provided for __bmc_user"
+    local name="${1}"; shift || _bi_fail "BMC name not provided for __bmc_user"
     sudo cat /etc/vtds/bmc_info.json | \
-        jq -r ".[] | select(.xname == \"${xname}\") | .redfish_username"
+        jq -r ".[] | select(.name == \"${name}\") | .redfish_username"
 }
 
 function __bmc_password() {
-    local xname="${1}"; shift || _bi_fail "BMC xname not provided for __bmc_user"
+    local name="${1}"; shift || _bi_fail "BMC name not provided for __bmc_user"
     sudo cat /etc/vtds/bmc_info.json | \
-        jq -r ".[] | select(.xname == \"${xname}\") | .redfish_password"
+        jq -r ".[] | select(.name == \"${name}\") | .redfish_password"
 }
 
 function __node_reset() {
     local reset_type="${1}"; shift || _bi_fail "no reset type supplied"
-    local node_xname="${1}"; shift || _bi_fail "no node XNAME provided"
-    local bmc_xname="${1}"; shift || _bi_fail "no BMC XNAME provided"
-    local bmc_url="https://${bmc_xname}/redfish/v1/Systems"
-    local node_action="${node_xname}/Actions/ComputerSystem.Reset"
+    local node_name="${1}"; shift || _bi_fail "no node name provided"
+    local bmc_name="${1}"; shift || _bi_fail "no BMC name provided"
+    local bmc_url="https://${bmc_name}/redfish/v1/Systems"
+    local node_action="${node_name}/Actions/ComputerSystem.Reset"
 
     curl -k \
-         -u "$(__bmc_user "${bmc_xname}"):$(__bmc_password "${bmc_xname}")" \
+         -u "$(__bmc_user "${bmc_name}"):$(__bmc_password "${bmc_name}")" \
          -H "Content-Type: application/json" \
          -X POST -d "{\"ResetType\": \"${reset_type}\" }" \
          "${bmc_url}/${node_action}"

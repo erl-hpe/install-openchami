@@ -322,7 +322,7 @@ EOF
 done
 {%- for node in nodes %}
 ochami cloud-init node set \
-       -d '[{"id":"{{ node.xname }}","local-hostname":"{{ node.hostname}} "}]'
+       -d '[{"id":"{{ node.name }}","local-hostname":"{{ node.hostname}} "}]'
 {% endfor %}
 
 {%- if deployment_mode == 'cluster' %}
@@ -330,20 +330,20 @@ ochami cloud-init node set \
 # In 'cluster' mode the nodes are all "physical" hosts already plugged
 # into the cluster network. We just need to power them on and they
 # should boot from OpenCHAMI
-power-on-node "{{ node.xname }}" "{{ node.bmc_xname }}"
+power-on-node "{{ node.name }}" "{{ node.bmc_name }}"
 {%- endfor %}
 {%- else %}
 # In 'host' mode, all of the compute nodes are VMs on the headnode VM,
 # so we need to create them here and let them boot from OpenCHAMI.
 {%- for node in nodes %}
-if sudo virsh list | grep "{{ node.xname }}"; then
-    info "cleaning up previously existing '{{ node.xname }}' VM"
-    sudo virsh destroy "{{ node.xname }}"
-    sudo virsh undefine "{{ node.xname }}" --nvram
+if sudo virsh list | grep "{{ node.name }}"; then
+    info "cleaning up previously existing '{{ node.name }}' VM"
+    sudo virsh destroy "{{ node.name }}"
+    sudo virsh undefine "{{ node.name }}" --nvram
 fi
-info "installing '{{ node.xname }}' VM as a managed node"
+info "installing '{{ node.name }}' VM as a managed node"
 sudo virt-install \
-     --name {{ node.xname }} \
+     --name {{ node.name }} \
      --memory 4096 \
      --vcpus 1 \
      --disk none \

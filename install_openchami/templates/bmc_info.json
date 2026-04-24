@@ -1,7 +1,7 @@
 [
-    {%- for xname, bmc_info in bmcs.items() %}
+    {%- for name, bmc_info in bmcs.items() %}
     {
-        "xname": "{{ xname }}",
+        "name": "{{ name }}",
         "blade_class": "{{ bmc_info.blade_class }}",
         "blade_instance": "{{ bmc_info.blade_instance }}",
         "redfish_username": "{{ bmc_info.network.redfish_username }}",

@@ -254,11 +254,10 @@ hosting_config:
 # to OpenCHAMI. It is used in the 'cluster' deployment mode only to set
 # up static discovery data.
 nodes:
-  - xname: x2000c0s0b0n0
-    bmc_xname: x2000c0s0b0
+  - name: x2000c0s0b0n0
+    bmc_name: x2000c0s0b0
     cluster_net_interface: openchami-net
     hostname: compute-001
-    name: x2000c0s0b0n0
     nid: 1
     node_group: compute
     interfaces:
