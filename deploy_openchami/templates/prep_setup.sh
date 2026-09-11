@@ -125,9 +125,6 @@ function switch_dns() {
     # the current configuration and then to add back only the local
     # management network IP as a nameserver on the management
     # network. It is complicated because nmcli is complicated...
-    #
-    # First, get the list of connections (interfaces) with nameservers
-    # assigned to them...
     local nameserver="${1}"; shift || {
         fail "no nameserver specified to switch to"
         return 1
@@ -136,19 +133,25 @@ function switch_dns() {
         fail "no search domain specified"
         return 1
     }
+    # First, get the list of connections (interfaces) with nameservers
+    # assigned to them...
     local connections=""
     for connection in $(nmcli --terse --fields NAME connection show); do
         nmcli connection show "${connection}" | grep -q 'ipv4.dns:' || continue
         nmcli connection show "${connection}" | grep -q 'ipv4.dns: *--' && continue
         connections="${connections} ${connection}"
     done
-    
-    # Now, strip off the nameserver from each of the affected connections...
+
+    # Save the connection state of each affected connection, if it is
+    # not already saved, so that we can restore the original
+    # connection state, then strip off the nameserver from each of the
+    # affected connections...
     info "switching dns on [${connections}]"
     for connection in ${connections}; do
         info "connection = '${connection}'"
         # shellcheck disable=SC2015
-        sudo nmcli connection modify "${connection}" ipv4.dns "" && \
+        save_dns "${connection}" && \
+            sudo nmcli connection modify "${connection}" ipv4.dns "" && \
             sudo nmcli connection down "${connection}" && \
             sudo nmcli connection up "${connection}" || {
                 fail "WARNING: unable to strip NS from '${connection}'"
@@ -169,8 +172,7 @@ function switch_dns() {
     # in the search on the same connection
     #
     # shellcheck disable=SC2015
-    save_dns "${connection}" && \
-        sudo nmcli connection modify "${connection}" ipv4.dns "${nameserver}" && \
+    sudo nmcli connection modify "${connection}" ipv4.dns "${nameserver}" && \
         sudo nmcli connection modify "${connection}" ipv4.dns-search "${domain}" && \
         sudo nmcli connection down "${connection}" && \
         sudo nmcli connection up "${connection}" || {

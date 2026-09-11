@@ -158,6 +158,7 @@ sudo sysctl -w net.ipv4.ip_forward=1
 #
 # First clean up what is there then add the ones we need
 info "setup-node: removing the virtual network for the compute node VM(s) to use"
+info "error messages are expected here if the network is not defined already"
 sudo virsh net-destroy {{ hosting_config.cluster_net_name }} || true
 sudo virsh net-undefine {{ hosting_config.cluster_net_name }} || true
 

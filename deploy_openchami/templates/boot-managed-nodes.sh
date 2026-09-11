@@ -121,7 +121,7 @@ function ssh_to_compute_node() {
     local time="-o ConnectTimeout=10"
     local where="root@${hostname}"
     info "attempting SSH to ${hostname} as ${user}"
-    for ((retry=0; retry<retries; ++retry)); do
+    for ((retry=0; retry < retries; ++retry)); do
         if sudo su - "${user}" -c \
                 "ssh ${check} ${file} ${time} ${where} '${cmd}'"; then
             info "SSH to ${hostname} succeeded"
@@ -133,9 +133,77 @@ function ssh_to_compute_node() {
     return 1
 }
 
+# Reset a compute node either using RedFish on a BMC, if we are
+# deploying in 'cluster' mode, or using 'virsh destroy' and 'virsh
+# start' if we are deploying in host mode.
+function restart_compute_node() {
+    local node_name="${1}"; shift || { fail "no node given for reset"; die; }
+    local bmc_name="${1}"; shift || { fail "no BMC given for reset"; die; } 
+{%- if deployment_mode == 'cluster' %}
+    info "boot-managed-nodes: power-cycling '${node_name}[BMC=${bmc_name}]'"
+    power-off-node "${node_name}" "${bmc_name}" || true
+    power-on-node "${node_name}" "${bmc_name}"
+{%- else %}
+    info "boot-managed-nodes: restarting VM '${node_name}'"
+    sudo virsh destroy "${node_name}" || true
+    sudo virsh start "${node_name}"
+{%- endif %}
+}
+
+# (Re-)create a host mode compute node (VM on the management node) if
+# we are deploying in 'host' mode. Restart the node (which already exists
+# outside of the deployment process) if we are deploying in cluster mode.
+function create_compute_node() {
+    local node_name="${1}"; shift || { fail "no node given for reset"; die; }
+    local bmc_name="${1}"; shift || { fail "no BMC given for reset"; die; } 
+    local interfaces=("$@")
+
+{%- if deployment_mode == 'host' %}
+    info "boot-managed-nodes: launching VM '${node_name}'"
+    if sudo virsh list --all | grep -q "${node_name}"; then
+        info "boot-managed-nodes: detroying existing VM '${node_name}'"
+        sudo virsh destroy "${node_name}" || true
+        info "boot-managed-nodes: undefining existing VM '${node_name}'"
+        sudo virsh undefine "${node_name}" --nvram || \
+            info "could not undefine '${node_name}'"
+    fi
+    if [ "$(derive_architecture)" == 'amd64' ]; then
+        UEFI="loader=/usr/share/OVMF/OVMF_CODE.secboot.fd,loader.readonly=yes,loader.type=pflash,nvram.template=/usr/share/OVMF/OVMF_VARS.fd,loader_secure=no"
+    else
+        UEFI="uefi"
+    fi
+    local network_opts=""
+    for interface in "${interfaces[@]}"; do
+        network_opts="${network_opts} --network ${interface}"
+    done
+    # Notice that '$network_opts' is not quoted here. That is
+    # intentional because we are expanding multiple '--network'
+    # options and their arguments. If '$network_opts' were quoted, it
+    # would expand as one big string and fail the command usage.
+    #
+    # shellcheck disable=SC2046
+    sudo virt-install \
+         --name "${node_name}" \
+         --memory 4096 \
+         --vcpus 1 \
+         --disk none \
+         --pxe \
+         --os-variant centos-stream9 \
+         ${network_opts} \
+         --graphics none \
+         --console pty,target_type=serial \
+         --boot network,hd \
+         --boot "${UEFI}" \
+         --virt-type kvm \
+         --noautoconsole
+{%- else %}
+    restart_compute_node "${node_name}" "${bmc_name}"
+{%- endif %}
+}
+
 # ── Get OCHAMI Token ─────────────────────────────────────────────
 info "boot-managed-nodes: waiting for an ochami access token"
-for _ in {1..10}; do
+for ((i = 0; i < 10; i++ )); do
     get-ochami-token || DEMO_ACCESS_TOKEN=""
     [ -n "${DEMO_ACCESS_TOKEN}" ] && break
     sleep 10
@@ -170,6 +238,10 @@ for builder in "${IMAGE_BUILDERS[@]}"; do
     S3_PREFIX="$(yaml_to_json < "${builder}" | \
         jq -r '.options.s3_prefix' | sed -e 's:/[[:blank:]]*$::')"
     [[ "${S3_PREFIX}" != "null" ]] || continue
+    # Notice that '$(managed_macs)' is not quoted here. That is
+    # because we are expanding a list of MAC addresses, and want each
+    # one to be a separate argument.
+    #
     # shellcheck disable=SC2046
     generate-boot-config-json \
         "${S3_PREFIX}" \
@@ -225,45 +297,69 @@ fi
 {% endfor %}
 {%- endif %}
 
-# ── Boot managed nodes ────────────────────────────────────────────────
+# ── Create managed nodes as needed ─────────────────────────────────────
+#
+# This could be done in-line with booting the nodes, which would
+# simplify the retry logic in the case where a boot fails the first
+# time. By doing it here, though, we give the nodes, especially when
+# there is more than one node in the cluster) more parallel time to
+# boot meaning the check for whether they booted runs faster in the
+# non-retry case.
 {%- for node in nodes %}
-{%- if deployment_mode == 'cluster' %}
-info "boot-managed-nodes: power-cycling '{{ node.name }}'"
-power-off-node "{{ node.name }}" "{{ node.bmc_name }}" || true
-power-on-node "{{ node.name }}" "{{ node.bmc_name }}"
-{%- else %}
-info "boot-managed-nodes: launching VM '{{ node.name }}'"
-if sudo virsh list --all | grep -q "{{ node.name }}"; then
-    sudo virsh destroy "{{ node.name }}" || true
-    sudo virsh undefine "{{ node.name }}" --nvram || \
-        info "could not undefine '{{ node.name }}'"
-fi
-if [ "$(derive_architecture)" == 'amd64' ]; then
-    UEFI="loader=/usr/share/OVMF/OVMF_CODE.secboot.fd,loader.readonly=yes,loader.type=pflash,nvram.template=/usr/share/OVMF/OVMF_VARS.fd,loader_secure=no"
-else
-    UEFI="uefi"
-fi
-sudo virt-install \
-     --name {{ node.name }} \
-     --memory 4096 \
-     --vcpus 1 \
-     --disk none \
-     --pxe \
-     --os-variant centos-stream9 \
-{%- for interface in node.interfaces %}
-     --network network={{ interface.network_name }},model=virtio,mac={{ interface.mac_addr }} \
+# Collect the network interface information for the node
+interfaces=(
+{%- for iface in node.interfaces %}
+    "network={{ iface.network_name }},model=virtio,mac={{ iface.mac_addr }}"
 {%- endfor %}
-     --graphics none \
-     --console pty,target_type=serial \
-     --boot network,hd \
-     --boot "${UEFI}" \
-     --virt-type kvm \
-     --noautoconsole
-{%- endif %}
+)
+create_compute_node "{{ node.name }}" "{{ node.bmc_name }}" "${interfaces[@]}"
 {%- endfor %}
 
-# ── Verify SSH connectivity ────────────────────────────────────────────
-{%- for node in nodes %}
-ssh_to_compute_node "$(printf "nid-%3.3d" {{ node.nid }})" "${DEPLOY_USER}"
-{%- endfor %}
 
+# ── Boot managed nodes and verify SSH connectivity ─────────────────────
+#
+# Retry booting each of the managed nodes a couple of times if the first
+# attempt fails because sometimes the boot service is slow to become
+# ready and there is, currently, no way to poll its readiness. We do
+# this by maintaining a rotating ordered array of successes, which,
+# when it gets full (contains all the managed node names), indicates that
+# all nodes have booted. We only reboot the nodes that have not yet booted.
+{#
+ Notice the Jinja2 string injection of the length calculation for 'successes'
+ that avoids creating templating problems.
+#}
+successes=()
+node_count="{{ nodes | length }}"
+ssh_failed="false"
+for ((boots=0;
+      boots < 3 && {{ '${#successes[@]}' }} < node_count;
+      boots++)); do
+{%- for node in nodes %}
+    if [[ "${successes[0]}" == "{{ node.name }}" ]]; then
+        # This node succeeded already, just rotate this node to the
+        # end of the successes list and go on.
+        successes=("${successes[@]:1}" "${successes[0]}")
+        continue
+    fi
+    # If a node failed to come up previously, there is something up
+    # with the boot service. It may just be a delay in having boot
+    # artifacts ready. Restart this node before trying to reach it,
+    # that way we get a fresh boot attempt.
+    if [[ "${ssh_failed}" != "false" ]]; then
+        restart_compute_node "{{ node.name }}" "{{ node.bmc_name }}"
+    fi
+    # Now see if we can SSH to the node. This will retry 60 times at
+    # 10 second intervals (we could configure this but for now we take
+    # the defaults), giving the node ample time to successfully boot
+    # and the boot-service ample time to become ready.
+    if ssh_to_compute_node "$(printf "nid-%3.3d" {{ node.nid }})" "${DEPLOY_USER}"; then
+        # SSH succeeded: add the node to the end of the successes list
+        successes+=("{{ node.name }}")
+    else
+        # SSH failed: don't add a success, but note that we had a boot
+        # failure so that nodes will be restarted until they boot or
+        # we give up.
+        ssh_failed="true"
+    fi
+{%- endfor %}
+done
