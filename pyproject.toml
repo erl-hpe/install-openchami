@@ -50,7 +50,7 @@ license-files = ["LICENSE"]
 
 [project.optional-dependencies]
 build = [
-    'build>=1.2.2,<1.5.0'
+    'build>=1.6.1,<1.7.0'
 ]
 ci = [
     'nox>=2024.10.9,<2026.3.0',
